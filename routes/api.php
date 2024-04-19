@@ -13,3 +13,7 @@ Route::post('/add-user', [UserController::class, 'create']);
 Route::get('/', [UserController::class, 'index']);
 Route::put('/', [UserController::class, 'edit']);
 Route::delete('/', [UserController::class, 'delete']);
+
+use App\Http\Controllers\RegisterController;
+
+Route::post('/register', [RegisterController::class, 'register']);
