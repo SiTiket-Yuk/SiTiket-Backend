@@ -36,9 +36,9 @@ class RegisterController extends Controller
 
         try {
             $createdUser = $this->firebaseAuth->createUserWithEmailAndPassword($email, $password);
-            return response()->json(['success' => true, 'message' => 'Registration Success']);
+            return response()->json(['success' => true], 200);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Registration Failed'], 500);
+            return response()->json(['success' => false], 500);
         }
     }
 
