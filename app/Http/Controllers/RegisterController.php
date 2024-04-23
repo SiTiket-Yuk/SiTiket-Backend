@@ -32,12 +32,13 @@ class RegisterController extends Controller
             $uid = $createdUser->uid;
             Firebase::database()->getReference('/users/' . $uid . '/name')->set($username);
 
-            return response()->json(['success' => true], 200);
-        } catch (\Kreait\Firebase\Auth\EmailExists $e) {
-            return response()->json(['success' => false], 400);
+            return response()->json(['success' => true, 'uid' => $uid], 200);
         } catch (\Exception $e) {
-            return response()->json(['success' => false], 500);
+            if ($e->getMessage() === 'The email address is already in use by another account.') {
+                return response()->json(['success' => false], 400);
+            } else {
+                return response()->json(['success' => false], 500);
+            }
         }
     }
-
 }

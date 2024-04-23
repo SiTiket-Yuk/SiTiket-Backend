@@ -11,6 +11,7 @@ class ImageController extends Controller
     public function getImage($id) {
         //Input = id (bisa uid user, atau id events)
         //output = gambar
+        $id = $id . ".jpg";
         $storage = Firebase::storage();
   
         $imageRef = $storage->getBucket()->object("{$id}");
@@ -27,7 +28,7 @@ class ImageController extends Controller
     public function getLogo($id) {
         //Input = id (bisa uid user, atau id events)
         //output = gambar
-        $id = $id . "_org";
+        $id = $id . "_org.png";
         $storage = Firebase::storage();
   
         $imageRef = $storage->getBucket()->object("{$id}");

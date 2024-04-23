@@ -62,13 +62,29 @@ class EventController extends Controller
             return response()->json(['success' => false], 500);
         }
     }
+
+    public function AllEventData()
+    {
+        //Input = id event
+        //output = semua info event dalam bentuk array
+        //cara manggil category bisa {{ implode(' ', $event['category']) }}, manggil yang lain $event['info']
+        try {
+            $events = Firebase::database()->getReference('/events')->getValue();
+            
+            return response()->json(['success' => true, 'events' => $events], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false], 500);
+        }
+    }
     
     public function AddRegisteredUserEvent(Request $request)
     {
         //Input = id event, uid user
-        //output = id event masuk di /users/uid/registeredevent/noarray/id
+        //output = id event masuk di /users/uid/registeredevent/id
         $uid = $request->input('uid');
         $id = $request->input('id');
+        $ticketBuy = $request->input('ticket');
+        $timelimit = $request->input('timelimit');
 
         try {
             $event = Firebase::database()->getReference('/events/' . $id)->getValue();
@@ -87,17 +103,24 @@ class EventController extends Controller
                 if($eventNotRegistered){
                     $eventStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
                     if($eventStatus === 'open'){
+                        
                         $ticket = Firebase::database()->getReference('/events/' . $id . '/ticket')->getValue();
-                        $ticket--;
+                        if ($ticket - $ticketBuy < 0){
+                            return response()->json(['success' => false], 200);
+                        }
+                        $ticket = $ticket - $ticketBuy;
+                        Firebase::database()->getReference('/events/' . $id . '/ticket')->set($ticket);
                         if($ticket === 0){
                             Firebase::database()->getReference('/events/' . $id . '/status')->set("closed");
                         }
-                        $count = count($registeredEvents);
+                        $harga = Firebase::database()->getReference('/events/' . $id . '/price')->getValue();
+                        $harga = $harga * $ticketBuy;
 
-                        $newKey = $count;
-
-                        $userRef = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $newKey);
-                        $userRef->set($id);
+                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Belum Lunas");
+                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/ticket")->set($ticketBuy);
+                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/total")->set($harga);
+                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/timelimit")->set($timelimit);
+                        
                     }
                 }else{
                     return response()->json(['success' => false], 400);
@@ -115,4 +138,12 @@ class EventController extends Controller
         }
     }
 
+    public function Lunas(){
+        try {
+            Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->set("Lunas");
+            return response()->json(['success' => true], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false], 500);
+        }
+    }
 }
