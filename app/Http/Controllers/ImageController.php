@@ -24,6 +24,24 @@ class ImageController extends Controller
         return "<img src='{$downloadUrl}' alt='Image'>";
     }
 
+    public function getLogo($id) {
+        //Input = id (bisa uid user, atau id events)
+        //output = gambar
+        $id = $id . "_org";
+        $storage = Firebase::storage();
+  
+        $imageRef = $storage->getBucket()->object("{$id}");
+        
+        if (!$imageRef->exists()) {
+            return response()->json(['success' => false], 404);
+        }
+        
+        $downloadUrl = $imageRef->signedUrl(new \DateTime('tomorrow'));
+        
+        return "<img src='{$downloadUrl}' alt='Image'>";
+    }
+
+
     public function uploadImage(Request $request) {
         //Input = file image, id (bisa uid user, atau id events)
         //output = gambar terdaftar di firebase storage /$id
@@ -50,7 +68,7 @@ class ImageController extends Controller
             return response()->json(['success' => false], 500);
         }
 
-        return response()->json(['success' => true, 'id' => $id], 200);
+        return response()->json(['success' => true], 200);
     }
 
 }

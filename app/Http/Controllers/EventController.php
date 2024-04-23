@@ -14,9 +14,13 @@ class EventController extends Controller
         $name = $request->input('nama');
         $date = $request->input('date');
         $price = $request->input('price');
+        $place = $request->input('place');
+        $time = $request->input('time');
+        $ticket = $request->input('ticket');
         $description = $request->input('description');
         $organizer = $request->input('organizer');
         $status = $request->input('status');
+
         $category = explode(',', $request->input('category'));
 
         try {
@@ -27,7 +31,10 @@ class EventController extends Controller
                 'desc' => $description,
                 'organizer' => $organizer,
                 'status' => $status,
-                'category' => $category
+                'category' => $category,
+                'place' => $place,
+                'time' => $time,
+                'ticket' => $ticket
             ];
             $id = Firebase::database()->getReference('/events')->push()->getKey();
             Firebase::database()->getReference('/events/' . $id)->set($data);
@@ -66,26 +73,34 @@ class EventController extends Controller
         try {
             $event = Firebase::database()->getReference('/events/' . $id)->getValue();
             if (!$event) {
-                return response()->json(['success' => false, 'message' => 'Event not found'], 404);
+                return response()->json(['success' => false], 404);
             }
 
             $user = Firebase::database()->getReference('/users/' . $uid)->getValue();
             if (!$user) {
-                return response()->json(['success' => false, 'message' => 'User not found'], 404);
+                return response()->json(['success' => false], 404);
             }
 
             $registeredEvents = Firebase::database()->getReference('/users/' . $uid . '/registeredevents')->getValue();
             if ($registeredEvents !== null){
-                $eventStatus = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->getValue();
-                if($eventStatus){
-                    $count = count($registeredEvents);
+                $eventNotRegistered = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->getValue();
+                if($eventNotRegistered){
+                    $eventStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
+                    if($eventStatus === 'open'){
+                        $ticket = Firebase::database()->getReference('/events/' . $id . '/ticket')->getValue();
+                        $ticket--;
+                        if($ticket === 0){
+                            Firebase::database()->getReference('/events/' . $id . '/status')->set("closed");
+                        }
+                        $count = count($registeredEvents);
 
-                    $newKey = $count;
+                        $newKey = $count;
 
-                    $userRef = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $newKey);
-                    $userRef->set($id);
+                        $userRef = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $newKey);
+                        $userRef->set($id);
+                    }
                 }else{
-                    return response()->json(['success' => false, 'message' => 'Event already registered', 404]);
+                    return response()->json(['success' => false], 400);
                 }
                 
             }else{
