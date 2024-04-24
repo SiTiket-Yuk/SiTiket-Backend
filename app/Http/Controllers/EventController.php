@@ -138,7 +138,7 @@ class EventController extends Controller
         }
     }
 
-    public function Lunas(){
+    public function Lunas($id, $uid){
         try {
             Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->set("Lunas");
             return response()->json(['success' => true], 200);

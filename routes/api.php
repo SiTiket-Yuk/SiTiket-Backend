@@ -34,3 +34,4 @@ Route::post('/event/registerUser', [EventController::class, 'AddRegisteredUserEv
 use App\Http\Controllers\UserController;
 
 Route::get('/user/{uid}', [UserController::class, 'UserData']);
+Route::get('/get-uid/{email}', [UserController::class, 'getUidwithEmail']);

@@ -7,6 +7,13 @@ use Kreait\Laravel\Firebase\Facades\Firebase;
 
 class UserController extends Controller
 {
+    private $firebaseAuth;
+
+    public function __construct()
+    {
+        $this->firebaseAuth = Firebase::auth();
+    }
+
   public function UserData($uid)
   {
       //Input = uid user
@@ -23,4 +30,18 @@ class UserController extends Controller
           return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
       }
   }
+
+
+    public function getUidwithEmail($email)
+    {
+        try {
+            $user = $this->firebaseAuth->getUserByEmail($email);
+
+            $uid = $user->uid;
+
+            return response()->json(['success' => true, 'uid' => $uid], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }
