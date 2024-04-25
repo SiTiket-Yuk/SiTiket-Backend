@@ -34,7 +34,8 @@ class EventController extends Controller
                 'category' => $category,
                 'place' => $place,
                 'time' => $time,
-                'ticket' => $ticket
+                'ticket' => $ticket,
+                'ticketleft'=> $ticket
             ];
             $id = Firebase::database()->getReference('/events')->push()->getKey();
             Firebase::database()->getReference('/events/' . $id)->set($data);
@@ -104,13 +105,13 @@ class EventController extends Controller
                     $eventStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
                     if($eventStatus === 'open'){
                         
-                        $ticket = Firebase::database()->getReference('/events/' . $id . '/ticket')->getValue();
-                        if ($ticket - $ticketBuy < 0){
+                        $ticketleft = Firebase::database()->getReference('/events/' . $id . '/ticketleft')->getValue();
+                        if ($ticketleft - $ticketBuy < 0){
                             return response()->json(['success' => false], 200);
                         }
-                        $ticket = $ticket - $ticketBuy;
-                        Firebase::database()->getReference('/events/' . $id . '/ticket')->set($ticket);
-                        if($ticket === 0){
+                        $ticketleft = $ticketleft - $ticketBuy;
+                        Firebase::database()->getReference('/events/' . $id . '/ticketleft')->set($ticketleft);
+                        if($ticketleft === 0){
                             Firebase::database()->getReference('/events/' . $id . '/status')->set("closed");
                         }
                         $harga = Firebase::database()->getReference('/events/' . $id . '/price')->getValue();
@@ -142,6 +143,53 @@ class EventController extends Controller
         try {
             Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->set("Lunas");
             return response()->json(['success' => true], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false], 500);
+        }
+    }
+
+    public function FeaturedEvent(){
+        try {
+            $events = Firebase::database()->getReference('/events')->getValue();
+            $featuredEvents = [];
+    
+            $totalBuyArray = [];
+    
+            foreach ($events as $id => $event) {
+                $ticketStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
+
+                if ($ticketStatus === 'closed') {
+                    continue;
+                }
+                $eventDate = Firebase::database()->getReference('/events/' . $id . '/date')->getValue();
+
+                if (strtotime($eventDate) <= strtotime(date('Y-m-d'))) {
+                    continue;
+                }
+
+                $ticket = Firebase::database()->getReference('/events/' . $id . '/ticket')->getValue();
+                $ticketleft = Firebase::database()->getReference('/events/' . $id . '/ticketleft')->getValue();
+    
+                $totalBuy = (($ticket - $ticketleft) / $ticket) * 100;
+    
+                $totalBuyArray[$id] = $totalBuy;
+            }
+    
+            arsort($totalBuyArray);
+    
+            $counter = 0;
+            foreach ($totalBuyArray as $eventId => $totalBuy) {
+                if ($counter >= 3) {
+                    break;
+                }
+
+                $eventDetails = Firebase::database()->getReference('/events/' . $eventId)->getValue();
+                $featuredEvents[] = $eventDetails;
+
+                $counter++;
+            }
+    
+            return response()->json(['success' => true, 'featured_events' => $featuredEvents], 200);
         } catch (\Exception $e) {
             return response()->json(['success' => false], 500);
         }

@@ -26,9 +26,11 @@ Route::post('/image/upload', [ImageController::class, 'uploadImage']);
 
 use App\Http\Controllers\EventController;
 
+Route::get('/event/events', [EventController::class, 'AllEventData']);
+Route::get('/event/featured', [EventController::class, 'FeaturedEvent']);
 Route::post('/event/register', [EventController::class, 'register']);
-Route::get('/event/{id}', [EventController::class, 'EventData']);
 Route::post('/event/registerUser', [EventController::class, 'AddRegisteredUserEvent']);
+Route::get('/event/{id}', [EventController::class, 'EventData']);
 
 
 use App\Http\Controllers\UserController;
