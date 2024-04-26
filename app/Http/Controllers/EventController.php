@@ -98,39 +98,33 @@ class EventController extends Controller
                 return response()->json(['success' => false], 404);
             }
 
-            $registeredEvents = Firebase::database()->getReference('/users/' . $uid . '/registeredevents')->getValue();
-            if ($registeredEvents !== null){
-                $eventNotRegistered = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->getValue();
-                if($eventNotRegistered){
-                    $eventStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
-                    if($eventStatus === 'open'){
+            $eventNotRegistered = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id)->getValue();
+            if($eventNotRegistered === null){
+                $eventStatus = Firebase::database()->getReference('/events/' . $id . '/status')->getValue();
+                if($eventStatus === 'open'){
                         
-                        $ticketleft = Firebase::database()->getReference('/events/' . $id . '/ticketleft')->getValue();
-                        if ($ticketleft - $ticketBuy < 0){
-                            return response()->json(['success' => false], 200);
-                        }
-                        $ticketleft = $ticketleft - $ticketBuy;
-                        Firebase::database()->getReference('/events/' . $id . '/ticketleft')->set($ticketleft);
-                        if($ticketleft === 0){
-                            Firebase::database()->getReference('/events/' . $id . '/status')->set("closed");
-                        }
-                        $harga = Firebase::database()->getReference('/events/' . $id . '/price')->getValue();
-                        $harga = $harga * $ticketBuy;
-
-                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Belum Lunas");
-                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/ticket")->set($ticketBuy);
-                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/total")->set($harga);
-                        Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/timelimit")->set($timelimit);
-                        
+                    $ticketleft = Firebase::database()->getReference('/events/' . $id . '/ticketleft')->getValue();
+                    if ($ticketleft - $ticketBuy < 0){
+                        return response()->json(['success' => false], 200);
                     }
-                }else{
-                    return response()->json(['success' => false], 400);
+                    $ticketleft = $ticketleft - $ticketBuy;
+                    Firebase::database()->getReference('/events/' . $id . '/ticketleft')->set($ticketleft);
+                    if($ticketleft === 0){
+                        Firebase::database()->getReference('/events/' . $id . '/status')->set("closed");
+                    }
+                    $harga = Firebase::database()->getReference('/events/' . $id . '/price')->getValue();
+                    $harga = $harga * $ticketBuy;
+
+                    Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Belum Lunas");
+                    Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/ticket")->set($ticketBuy);
+                    Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/total")->set($harga);
+                    Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . $id . "/timelimit")->set($timelimit);
+                        
                 }
-                
             }else{
-                $userRef = Firebase::database()->getReference('/users/' . $uid . '/registeredevents/' . 0);
-                $userRef->set($id);
+                return response()->json(['success' => false, 'message' => 'Lu udah daftar eventnya'], 400);
             }
+                
             
             
             return response()->json(['success' => true], 200);
