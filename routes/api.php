@@ -20,7 +20,8 @@ Route::post('/login', [LoginController::class, 'login']);
 
 use App\Http\Controllers\ImageController;
 
-Route::get('/image/{id}', [ImageController::class, 'getImage']);
+Route::get('/image/post/{id}', [ImageController::class, 'getImage']);
+Route::get('/image/logo/{id}', [ImageController::class, 'getLogo']);
 Route::post('/image/upload', [ImageController::class, 'uploadImage']);
 
 
