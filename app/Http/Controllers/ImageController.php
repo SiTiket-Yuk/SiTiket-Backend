@@ -3,19 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Kreait\Laravel\Firebase\Facades\Firebase;
 
 class ImageController extends Controller
 {
+  public function __construct()
+  {
+    parent::__construct();
+  }
 
   public function getImage($id)
   {
     //Input = id (bisa uid user, atau id events)
     //output = gambar
     $id = $id . ".jpg";
-    $storage = Firebase::storage();
 
-    $imageRef = $storage->getBucket()->object("{$id}");
+    $imageRef = $this->$storage->getBucket()->object("{$id}");
 
     if (!$imageRef->exists()) {
       return response()->json(['success' => false], 404);
@@ -31,9 +33,8 @@ class ImageController extends Controller
     //Input = id (bisa uid user, atau id events)
     //output = gambar
     $id = $id . "_org.png";
-    $storage = Firebase::storage();
 
-    $imageRef = $storage->getBucket()->object("{$id}");
+    $imageRef = $this->$storage->getBucket()->object("{$id}");
 
     if (!$imageRef->exists()) {
       return response()->json(['success' => false], 404);
@@ -61,9 +62,7 @@ class ImageController extends Controller
       return response()->json(['success' => false], 400);
     }
 
-    $storage = Firebase::storage();
-
-    $imageRef = $storage->getBucket()->upload($file->getPathname(), [
+    $imageRef = $this->$storage->getBucket()->upload($file->getPathname(), [
       'name' => "{$id}"
     ]);
 

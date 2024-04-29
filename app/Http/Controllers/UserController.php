@@ -2,16 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Kreait\Laravel\Firebase\Facades\Firebase;
-
 class UserController extends Controller
 {
-  private $firebaseAuth;
-
   public function __construct()
   {
-    $this->firebaseAuth = Firebase::auth();
+    parent::__construct();
   }
 
   public function UserData($uid)
@@ -19,7 +14,7 @@ class UserController extends Controller
     //Input = uid user
     //output = semua info user dalam bentuk array
     try {
-      $user = Firebase::database()->getReference('/users/' . $uid)->getValue();
+      $user = $this->database->getReference('/users/' . $uid)->getValue();
 
       if (!$user) {
         return response()->json(['success' => false, 'message' => 'Event not found'], 404);

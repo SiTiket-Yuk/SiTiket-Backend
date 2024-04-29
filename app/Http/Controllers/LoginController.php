@@ -3,15 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Kreait\Laravel\Firebase\Facades\Firebase;
 
 class LoginController extends Controller
 {
-  private $firebaseAuth;
-
   public function __construct()
   {
-    $this->firebaseAuth = Firebase::auth();
+    parent::__construct();
   }
 
   public function login(Request $request)
