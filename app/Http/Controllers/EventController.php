@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+use function Psy\debug;
 
 class EventController extends Controller
 {
@@ -11,7 +14,7 @@ class EventController extends Controller
     parent::__construct();
   }
 
-  public function register(Request $request)
+  public function Register(Request $request)
   {
     //Input = info event
     //output = event terdaftar di realtime db /events/uniqueid
@@ -44,9 +47,9 @@ class EventController extends Controller
       $id = $this->database->getReference('/events')->push()->getKey();
       $this->database->getReference('/events/' . $id)->set($data);
 
-      return response()->json(['success' => true], 200);
+      return response()->json(['message' => 'success'], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 400);
+      return response()->json(['message' => 'failed'], 500);
     }
   }
 
@@ -59,12 +62,12 @@ class EventController extends Controller
       $event = $this->database->getReference('/events/' . $id)->getValue();
 
       if (!$event) {
-        return response()->json(['success' => false], 404);
+        return response()->json(['message' => "event not found"], 404);
       }
 
-      return response()->json(['success' => true, 'event' => $event], 200);
+      return response()->json(['message' => 'success', 'event' => $event], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 500);
+      return response()->json(['message' => 'failed'], 500);
     }
   }
 
@@ -76,9 +79,9 @@ class EventController extends Controller
     try {
       $events = $this->database->getReference('/events')->getValue();
 
-      return response()->json(['success' => true, 'events' => $events], 200);
+      return response()->json(['message' => 'success', 'events' => $events], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 500);
+      return response()->json(['message' => 'failed'], 500);
     }
   }
 
@@ -94,12 +97,12 @@ class EventController extends Controller
     try {
       $event = $this->database->getReference('/events/' . $id)->getValue();
       if (!$event) {
-        return response()->json(['success' => false], 404);
+        return response()->json(['message' => 'event not found'], 404);
       }
 
       $user = $this->database->getReference('/users/' . $uid)->getValue();
       if (!$user) {
-        return response()->json(['success' => false], 404);
+        return response()->json(['message' => 'user not found'], 404);
       }
 
       $eventNotRegistered = $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id)->getValue();
@@ -109,7 +112,7 @@ class EventController extends Controller
 
           $ticketleft = $this->database->getReference('/events/' . $id . '/ticketleft')->getValue();
           if ($ticketleft - $ticketBuy < 0) {
-            return response()->json(['success' => false], 200);
+            return response()->json(['message' => 'Insufficient tickets available'], 200);
           }
           $ticketleft = $ticketleft - $ticketBuy;
           $this->database->getReference('/events/' . $id . '/ticketleft')->set($ticketleft);
@@ -125,14 +128,12 @@ class EventController extends Controller
           $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/timelimit")->set($timelimit);
         }
       } else {
-        return response()->json(['success' => false, 'message' => 'Lu udah daftar eventnya'], 400);
+        return response()->json(['message' => 'already bought the ticket'], 200);
       }
 
-
-
-      return response()->json(['success' => true], 200);
+      return response()->json(['message' => 'success'], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 500);
+      return response()->json(['message' => 'failed'], 500);
     }
   }
 
@@ -140,58 +141,65 @@ class EventController extends Controller
   {
     try {
       $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Lunas");
-      return response()->json(['success' => true], 200);
+      return response()->json(['message' => 'success'], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 500);
+      return response()->json(['success' => 'failed'], 500);
     }
   }
 
   public function FeaturedEvent()
   {
     try {
-      $events = $this->database->getReference('/events')->getValue();
+      $events = $this->database->getReference('/events')
+        ->orderByChild('ticketleft')
+        ->getSnapshot()
+        ->getValue();
+
       $featuredEvents = [];
 
-      $totalBuyArray = [];
-
-      foreach ($events as $id => $event) {
-        $ticketStatus = $this->database->getReference('/events/' . $id . '/status')->getValue();
-
-        if ($ticketStatus === 'closed') {
-          continue;
-        }
-        $eventDate = $this->database->getReference('/events/' . $id . '/date')->getValue();
-
-        if (strtotime($eventDate) <= strtotime(date('Y-m-d'))) {
-          continue;
-        }
-
-        $ticket = $this->database->getReference('/events/' . $id . '/ticket')->getValue();
-        $ticketleft = $this->database->getReference('/events/' . $id . '/ticketleft')->getValue();
-
-        $totalBuy = (($ticket - $ticketleft) / $ticket) * 100;
-
-        $totalBuyArray[$id] = $totalBuy;
+      foreach ($events as $eventId => $event) {
+        $totalBuy = (($event['ticket'] - $event['ticketleft']) / $event['ticket']) * 100;
+        $featuredEvents[$eventId] = $event;
+        $featuredEvents[$eventId]['totalBuy'] = $totalBuy;
       }
 
-      arsort($totalBuyArray);
+      $totalBuy = array_column($featuredEvents, 'totalBuy');
 
-      $counter = 0;
-      foreach ($totalBuyArray as $eventId => $totalBuy) {
-        if ($counter >= 3) {
+      array_multisort($featuredEvents, SORT_ASC, $totalBuy);
+
+      return response()->json(['message' => 'success', 'events' => array_splice($featuredEvents, 0, 3)], 200);
+    } catch (\Exception $e) {
+      return response()->json(['message' => 'failed'], 400);
+    }
+  }
+
+  public function OngoingEvent()
+  {
+    try {
+      $events = $this->database->getReference('/events')
+        ->orderByChild('date')
+        ->getSnapshot()
+        ->getValue();
+
+      $currentYear = date('Y');
+      $currentMonth = date('m');
+
+      $ongoingEvents = [];
+
+      foreach ($events as $eventId => $event) {
+        $eventDate = explode('-', $event['date']);
+        Log::debug($currentYear . $eventDate[0]);
+        if ($currentYear === $eventDate[0] && $currentMonth === $eventDate[1]) {
+          $ongoingEvents[$eventId] = $event;
+        }
+        if (count($ongoingEvents) === 3) {
           break;
         }
-
-        $eventDetails = $this->database->getReference('/events/' . $eventId)->getValue();
-        $eventDetails["eventId"] = $eventId;
-        $featuredEvents[] = $eventDetails;
-
-        $counter++;
       }
 
-      return response()->json(['success' => true, 'featured_events' => $featuredEvents], 200);
+      return response()->json(['message' => 'success', 'events' => $ongoingEvents], 200);
     } catch (\Exception $e) {
-      return response()->json(['success' => false], 500);
+      return response()->json(['message' => 'failed'], 400);
     }
   }
 }
