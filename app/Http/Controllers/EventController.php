@@ -122,7 +122,7 @@ class EventController extends Controller
           $harga = $this->database->getReference('/events/' . $id . '/price')->getValue();
           $harga = $harga * $ticketBuy;
 
-          $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Belum Lunas");
+          $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/status")->set("Lunas");
           $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/ticket")->set($ticketBuy);
           $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/total")->set($harga);
           $this->database->getReference('/users/' . $uid . '/registeredevents/' . $id . "/timelimit")->set($timelimit);
