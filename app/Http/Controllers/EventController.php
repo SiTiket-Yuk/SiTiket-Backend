@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -55,15 +56,18 @@ class EventController extends Controller
 
   public function EventData($id)
   {
-    //Input = id event
-    //output = semua info event dalam bentuk array
-    //cara manggil category bisa {{ implode(' ', $event['category']) }}, manggil yang lain $event['info']
     try {
       $event = $this->database->getReference('/events/' . $id)->getValue();
-
       if (!$event) {
         return response()->json(['message' => "event not found"], 404);
       }
+      $event['eventId'] = $id;
+      $event['image'] = $this->storage->getBucket()
+        ->object("{$id}.jpg")
+        ->signedUrl(new \DateTime('tomorrow'));
+      $event['logo'] = $this->storage->getBucket()
+        ->object("{$id}_org.png")
+        ->signedUrl(new \DateTime('tomorrow'));
 
       return response()->json(['message' => 'success', 'event' => $event], 200);
     } catch (\Exception $e) {
@@ -73,13 +77,23 @@ class EventController extends Controller
 
   public function AllEventData()
   {
-    //Input = id event
-    //output = semua info event dalam bentuk array
-    //cara manggil category bisa {{ implode(' ', $event['category']) }}, manggil yang lain $event['info']
+    $allEvents = [];
     try {
       $events = $this->database->getReference('/events')->getValue();
+      $i = 0;
+      foreach ($events as $eventId => $event) {
+        $allEvents[$i] = $event;
+        $allEvents[$i]['eventId'] = $eventId;
+        $allEvents[$i]['image'] = $this->storage->getBucket()
+          ->object("{$eventId}.jpg")
+          ->signedUrl(new \DateTime('tomorrow'));
+        $allEvents[$i]['logo'] = $this->storage->getBucket()
+          ->object("{$eventId}_org.png")
+          ->signedUrl(new \DateTime('tomorrow'));
+        $i++;
+      }
 
-      return response()->json(['message' => 'success', 'events' => $events], 200);
+      return response()->json(['message' => 'success', 'events' => $allEvents], 200);
     } catch (\Exception $e) {
       return response()->json(['message' => 'failed'], 500);
     }
@@ -156,11 +170,19 @@ class EventController extends Controller
         ->getValue();
 
       $featuredEvents = [];
-
+      $i = 0;
       foreach ($events as $eventId => $event) {
         $totalBuy = (($event['ticket'] - $event['ticketleft']) / $event['ticket']) * 100;
-        $featuredEvents[$eventId] = $event;
-        $featuredEvents[$eventId]['totalBuy'] = $totalBuy;
+        $featuredEvents[$i] = $event;
+        $featuredEvents[$i]['eventId'] = $eventId;
+        $featuredEvents[$i]['totalBuy'] = $totalBuy;
+        $featuredEvents[$i]['image'] = $this->storage->getBucket()
+          ->object("{$eventId}.jpg")
+          ->signedUrl(new \DateTime('tomorrow'));
+        $featuredEvents[$i]['logo'] = $this->storage->getBucket()
+          ->object("{$eventId}_org.png")
+          ->signedUrl(new \DateTime('tomorrow'));
+        $i++;
       }
 
       $totalBuy = array_column($featuredEvents, 'totalBuy');
@@ -183,14 +205,27 @@ class EventController extends Controller
 
       $currentYear = date('Y');
       $currentMonth = date('m');
+      $currentDay = date('d');
 
       $ongoingEvents = [];
-
+      $i = 0;
       foreach ($events as $eventId => $event) {
         $eventDate = explode('-', $event['date']);
         Log::debug($currentYear . $eventDate[0]);
-        if ($currentYear === $eventDate[0] && $currentMonth === $eventDate[1]) {
-          $ongoingEvents[$eventId] = $event;
+        if (
+          $currentYear === $eventDate[0] &&
+          $currentMonth === $eventDate[1] &&
+          $currentDay <= $eventDate[2]
+        ) {
+          $ongoingEvents[$i] = $event;
+          $ongoingEvents[$i]['eventId'] = $eventId;
+          $ongoingEvents[$i]['image'] = $this->storage->getBucket()
+            ->object("{$eventId}.jpg")
+            ->signedUrl(new \DateTime('tomorrow'));
+          $ongoingEvents[$i]['logo'] = $this->storage->getBucket()
+            ->object("{$eventId}_org.png")
+            ->signedUrl(new \DateTime('tomorrow'));
+          $i++;
         }
         if (count($ongoingEvents) === 3) {
           break;
