@@ -13,12 +13,6 @@ class AuthController extends Controller
 
   public function Register(Request $request)
   {
-    // Validation
-    $validator = $request->validate([
-      'username' => 'required',
-      'email' => 'required|email|unique:users,email',
-      'password' => 'required|min:8',
-    ]);
 
     $username = $request->input('username');
     $email = $request->input('email');
@@ -28,6 +22,7 @@ class AuthController extends Controller
       $createdUser = $this->firebaseAuth->createUserWithEmailAndPassword($email, $password);
       $uid = $createdUser->uid;
       $this->database->getReference('/users/' . $uid . '/name')->set($username);
+      $this->database->getReference('/users/' . $uid . '/role')->set("user");
 
       return response()->json(['message' => 'success', 'uid' => $uid], 200);
     } catch (\Exception $e) {
@@ -41,11 +36,6 @@ class AuthController extends Controller
 
   public function Login(Request $request)
   {
-
-    $validator = $request->validate([
-      'email' => 'required|email',
-      'password' => 'required|min:8',
-    ]);
 
     try {
       $SignInResult = $this->firebaseAuth->signInWithEmailAndPassword($request->email, $request->password);
