@@ -19,7 +19,7 @@ class EventController extends Controller
   {
     //Input = info event
     //output = event terdaftar di realtime db /events/uniqueid
-    $name = $request->input('nama');
+    $name = $request->input('name');
     $date = $request->input('date');
     $price = $request->input('price');
     $place = $request->input('place');
@@ -30,6 +30,10 @@ class EventController extends Controller
     $status = $request->input('status');
 
     $category = explode(',', $request->input('category'));
+
+    $eventImage = $request->file('eventImage');
+    $organizerLogo = $request->file('organizerLogo');
+
 
     try {
       $data = [
@@ -45,9 +49,19 @@ class EventController extends Controller
         'ticket' => $ticket,
         'ticketleft' => $ticket
       ];
+
       $id = $this->database->getReference('/events')->push()->getKey();
       $this->database->getReference('/events/' . $id)->set($data);
 
+      $eventImagePath = $eventImage->getPathname();
+      $organizerLogoPath = $organizerLogo->getPathname();
+
+      $this->storage->getBucket()->upload($eventImagePath, [
+        'name' => "{$id}"
+      ]);
+      $this->storage->getBucket()->upload($organizerLogoPath, [
+        'name' => "{$id}_org"
+      ]);
       return response()->json(['message' => 'success'], 200);
     } catch (\Exception $e) {
       return response()->json(['message' => 'failed'], 500);
